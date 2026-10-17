@@ -15,9 +15,10 @@ Provide a small, self-contained browser app for listening to a local audio file.
 
 - Accept locally selected audio files, including MP3.
 - Play and pause the loaded file.
+- Attempt playback when a file is loaded; if the browser blocks autoplay, prompt the user to press Play.
 - Show elapsed and total time and provide a seek slider.
 - Provide backward and forward skip buttons with a configurable interval from 1 to 300 seconds.
-- Offer playback rates from 0.5× through 2×.
+- Offer playback rates from 50% through 200% in 10% increments in the dropdown, with buttons to raise or lower the rate in 5% increments. Show the exact rate in the dropdown when a button selects an in-between value.
 - Support drag and drop in addition to the file picker.
 - Provide accessible labels, status announcements, focus indicators, and responsive layout.
 - Keep audio local to the browser using a temporary object URL and release it when replaced or when the page closes.

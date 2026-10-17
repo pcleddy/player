@@ -115,6 +115,21 @@
     }
     .options { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 20px; border-top: 1px solid var(--line); }
     .option { display: flex; align-items: center; gap: 11px; }
+    .speed-control { display: flex; align-items: center; gap: 6px; }
+    .speed-nudge {
+      display: grid;
+      width: 36px;
+      height: 40px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-soft);
+      color: var(--text);
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .speed-nudge:hover { border-color: #627363; background: #29342c; }
     .option label { color: var(--muted); font-size: .9rem; }
     select {
       min-height: 40px;
@@ -174,15 +189,11 @@
       <div class="options">
         <div class="option">
           <label for="speed">Playback speed</label>
-          <select id="speed" aria-label="Playback speed">
-            <option value="0.5">0.5×</option>
-            <option value="0.75">0.75×</option>
-            <option value="1" selected>1×</option>
-            <option value="1.25">1.25×</option>
-            <option value="1.5">1.5×</option>
-            <option value="1.75">1.75×</option>
-            <option value="2">2×</option>
-          </select>
+          <div class="speed-control">
+            <button class="speed-nudge" id="slowerButton" type="button" aria-label="Decrease speed by 5 percent" title="Decrease speed by 5%">−</button>
+            <select id="speed" aria-label="Playback speed"></select>
+            <button class="speed-nudge" id="fasterButton" type="button" aria-label="Increase speed by 5 percent" title="Increase speed by 5%">+</button>
+          </div>
         </div>
         <div class="skip-setting">
           <label for="skipSeconds">Skip</label>
@@ -211,6 +222,14 @@
       const status = document.querySelector('#status');
       let objectUrl = null;
       let wasPlayingBeforeSeek = false;
+
+      for (let percent = 50; percent <= 200; percent += 10) {
+        const option = document.createElement('option');
+        option.value = String(percent / 100);
+        option.textContent = `${percent}%`;
+        if (percent === 100) option.selected = true;
+        speed.append(option);
+      }
 
       const formatTime = (seconds) => {
         if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -254,6 +273,9 @@
         playButton.textContent = '▶';
         playButton.setAttribute('aria-label', 'Play');
         status.textContent = `Loaded ${file.name}`;
+        audio.play().catch(() => {
+          status.textContent = `Loaded ${file.name}. Press Play to start playback.`;
+        });
       };
 
       const togglePlayback = async () => {
@@ -276,7 +298,27 @@
       document.querySelector('#forwardButton').addEventListener('click', () => skip(1));
       skipSeconds.addEventListener('input', updateSkipLabels);
       skipSeconds.addEventListener('change', () => { skipSeconds.value = getSkip(); updateSkipLabels(); });
-      speed.addEventListener('change', () => { audio.playbackRate = Number(speed.value); });
+      const setSpeed = (value) => {
+        const percent = Math.round(Math.min(2, Math.max(0.5, value)) * 100);
+        audio.playbackRate = percent / 100;
+        const previousStep = speed.querySelector('[data-current-speed]');
+        if (previousStep) previousStep.remove();
+        if (percent % 10 !== 0) {
+          const currentStep = document.createElement('option');
+          currentStep.value = String(percent / 100);
+          currentStep.textContent = `${percent}%`;
+          currentStep.dataset.currentSpeed = 'true';
+          speed.append(currentStep);
+        }
+        speed.value = String(percent / 100);
+      };
+      speed.addEventListener('change', () => {
+        const currentStep = speed.querySelector('[data-current-speed]');
+        if (currentStep && currentStep.value !== speed.value) currentStep.remove();
+        audio.playbackRate = Number(speed.value);
+      });
+      document.querySelector('#slowerButton').addEventListener('click', () => setSpeed(Number(speed.value) - 0.05));
+      document.querySelector('#fasterButton').addEventListener('click', () => setSpeed(Number(speed.value) + 0.05));
 
       audio.addEventListener('loadedmetadata', () => {
         duration.textContent = formatTime(audio.duration);
